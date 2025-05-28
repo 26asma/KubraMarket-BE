@@ -6,7 +6,7 @@ const verifyToken = require('../middlewares/verifyToken');
 
 router.post('/', verifyToken, isAdmin, shopController.createShop);
 router.get('/:shopId', shopController.getShopById);
-router.get('/', verifyToken,shopController.getAllShops);
+router.get('/',shopController.getAllShops);
 router.delete('/:shopId', verifyToken, isAdmin, shopController.deleteShop);
 
 module.exports = router;
