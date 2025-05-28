@@ -1,0 +1,220 @@
+const { Shop, Merchant, User,Category,ShopSpecification,ShopCategory } = require('../models');
+const messages = require('../constants/messages');
+const { v4: uuidv4 } = require('uuid');
+
+// Create a new shop
+exports.createShop = async (req, res, next) => {
+  try {
+    const {
+      shop_name,
+      description,
+      category,
+      has_physical_shop,
+      location,
+      logo_url,
+      banner_url,
+      annual_income,
+    } = req.body;
+
+    if (!shop_name) {
+      return res.status(400).json({ error: messages.general.BAD_REQUEST });
+    }
+
+    const shop_id = uuidv4(); 
+
+    const newShop = await Shop.create({
+      shop_id,
+      shop_name,
+      description,
+      category,
+      has_physical_shop,
+      location,
+      logo_url,
+      banner_url,
+      annual_income,
+    });
+
+    return res.status(201).json({
+      message:messages.shop.SHOP_CREATED,
+      data: newShop,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+exports.updateShop = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const { shopId } = req.params;
+    const {
+      shop_name,
+      description,
+      categories, // expects array of category names
+      has_physical_shop,
+      location,
+      logo_url,
+      banner_url,
+      annual_income,
+      delivery_type,
+      is_exchangeable
+    } = req.body;
+
+    // 1. Validate shop exists
+    const shop = await Shop.findByPk(shopId, { transaction });
+    if (!shop) {
+      await transaction.rollback();
+      return res.status(404).json({ message: messages.general.NOT_FOUND });
+    }
+
+    // 2. Update shop fields
+    Object.assign(shop, {
+      shop_name,
+      description,
+      has_physical_shop,
+      location,
+      logo_url,
+      banner_url,
+      annual_income
+    });
+
+    await shop.save({ transaction });
+
+    // 3. Update shop specification
+    if (delivery_type || is_exchangeable !== undefined) {
+      const [spec, created] = await ShopSpecification.findOrCreate({
+        where: { shop_id: shop.id },
+        defaults: { delivery_type, is_exchangeable },
+        transaction
+      });
+
+      if (!created) {
+        spec.delivery_type = delivery_type ?? spec.delivery_type;
+        spec.is_exchangeable = is_exchangeable ?? spec.is_exchangeable;
+        await spec.save({ transaction });
+      }
+    }
+
+    // 4. Handle many-to-many shop ↔ categories
+    if (Array.isArray(categories)) {
+      // Clear existing associations
+      await ShopCategory.destroy({ where: { shop_id: shop.id }, transaction });
+
+      // Re-insert associations
+      for (const catName of categories) {
+        const [category] = await Category.findOrCreate({
+          where: { name: catName },
+          defaults: {
+            slug: catName.toLowerCase().replace(/\s+/g, '-'),
+            is_active: true
+          },
+          transaction
+        });
+
+        await ShopCategory.create({
+          shop_id: shop.id,
+          category_id: category.id
+        }, { transaction });
+      }
+    }
+
+    await transaction.commit();
+    return res.status(200).json({ message: messages.shop.SHOP_UPDATED });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error(error);
+    return res.status(500).json({ message: messages.general.SERVER_ERROR });
+  }
+};
+
+
+
+exports.getShopById = async (req, res) => {
+  try {
+    const { shopId } = req.params;
+
+    const shop = await Shop.findOne({ where: { id: shopId } });
+
+    if (!shop) {
+      return res.status(404).json({ message: messages.general.NOT_FOUND });
+    }
+
+    return res.status(200).json({ data: shop });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: messages.general.SERVER_ERROR });
+  }
+};
+// exports.getAllShops = async (req, res) => {
+//   try {
+//     const shops = await Shop.findAll();
+
+//     return res.status(200).json({ data: shops });
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ message: messages.general.SERVER_ERROR });
+//   }
+// };
+exports.getAllShops = async (req, res) => {
+  try {
+    const isAdmin = ['admin', 'super_admin'].includes(req.user.role);
+
+    const whereCondition = isAdmin ? {} : { is_active: true };
+
+    const shops = await Shop.findAll({ where: whereCondition });
+
+    return res.status(200).json({ data: shops });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: messages.general.SERVER_ERROR });
+  }
+};
+
+
+
+const { sequelize } = require('../models'); // import sequelize instance
+
+exports.deleteShop = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const { shopId } = req.params;
+
+    const shop = await Shop.findOne({ where: { id: shopId }, transaction });
+    if (!shop) {
+      await transaction.rollback();
+      return res.status(404).json({ message: messages.general.NOT_FOUND });
+    }
+
+    const merchant = await Merchant.findOne({ where: { id: shop.merchant_id }, transaction });
+    if (!merchant) {
+      await transaction.rollback();
+      return res.status(404).json({ message: messages.auth.NOT_MERCHANT });
+    }
+
+    await User.update(
+      { role: 'customer' },
+      { where: { id: merchant.user_id }, transaction }
+    );
+
+    await Shop.destroy({ where: { id: shopId }, transaction });
+    await Merchant.destroy({ where: { id: merchant.id }, transaction });
+
+    await transaction.commit();
+    return res.status(200).json({
+      message: messages.shop.SHOP_DELETED,
+    });
+
+  } catch (error) {
+    await transaction.rollback();
+    console.error("❌ Transaction failed:", error);
+    return res.status(500).json({
+      message: messages.general.SERVER_ERROR,
+      error: error.message,
+    });
+  }
+};
+
