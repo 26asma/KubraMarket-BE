@@ -73,6 +73,18 @@ const sequelize = new Sequelize(
     console.log("✅ Database connection established");
 
     const PORT = process.env.PORT || 5000;
+    app.get("/", (req, res) => {
+  res.send(`
+    <html>
+      <head><title>Kubra Market</title></head>
+      <body style="font-family: sans-serif; text-align: center; width:100vw;display: flex; justify-content: center; align-items: center; height: 100vh;overflow: hidden;">
+        <h1 style="color:rgb(118, 73, 122);">KubraMarket Development Server is Live!</h1>
+       
+      </body>
+    </html>
+  `);
+});
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
