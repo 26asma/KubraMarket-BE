@@ -34,6 +34,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const merchantRoutes = require("./routes/merchantRoutes");
+const merchantRequestRoutes = require("./routes/merchantRequestRoutes");
 const shopRoutes = require("./routes/shopRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const errorHandler = require('./middlewares/errorHandler');
@@ -48,6 +49,8 @@ app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/merchant", merchantRoutes);
+app.use('/api/merchant-requests',merchantRequestRoutes);
+
 app.use("/api/category", categoryRoutes);
 app.use(errorHandler);
 

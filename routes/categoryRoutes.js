@@ -6,7 +6,7 @@ const isAdmin = require('../middlewares/isAdmin');
 router.post('/', verifyToken,isAdmin,categoryController.createCategory);
 router.get('/', categoryController.getAllCategories);
 router.put('/:id', verifyToken,isAdmin,categoryController.updateCategory);
-router.delete('/:id', categoryController.deleteCategory);
+router.delete('/:id', verifyToken,isAdmin,categoryController.deleteCategory);
 router.get('/:slug', categoryController.getCategoryBySlug);
 router.get('/shop/:shopId', categoryController.getCategoriesForShop);
 router.get('/shops/:slug', categoryController.getShopsByCategory);
