@@ -6,6 +6,7 @@ const isAdmin = require('../middlewares/isAdmin');
 
 router.post('/', verifyToken, merchantRequestController.createRequest);
 router.get('/', verifyToken, isAdmin, merchantRequestController.getAllRequests);
+router.get('/:id', verifyToken, isAdmin, merchantRequestController.getRequestById);
 router.patch('/:id/status', verifyToken, isAdmin, merchantRequestController.updateStatus);
 router.get('/status/:status', verifyToken, isAdmin, merchantRequestController.getRequestsByStatus);
 

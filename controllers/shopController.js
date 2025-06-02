@@ -69,19 +69,27 @@ exports.updateShop = async (req, res) => {
       return res.status(404).json({ message: messages.general.NOT_FOUND });
     }
 
-    // 2. Update shop fields
-    Object.assign(shop, {
-      shop_name,
-      description,
-      has_physical_shop,
-      location,
-      logo_url,
-      banner_url,
-      annual_income
-    });
+if (shop_name) {
+  shop.shop_name = shop_name;
+
+  // Also update shop_name in the Merchant table
+  const merchant = await Merchant.findOne({ where: { id: shop.merchant_id }, transaction });
+  if (merchant) {
+    merchant.shop_name = shop_name;
+    await merchant.save({ transaction });
+  }
+}
+
+if (description !== undefined) shop.description = description;
+if (has_physical_shop !== undefined) shop.has_physical_shop = has_physical_shop;
+if (location !== undefined) shop.location = location;
+if (logo_url !== undefined) shop.logo_url = logo_url;
+if (banner_url !== undefined) shop.banner_url = banner_url;
+if (annual_income !== undefined) shop.annual_income = annual_income;
 
     await shop.save({ transaction });
 
+ 
     // 3. Update shop specification
     if (delivery_type || is_exchangeable !== undefined) {
       const [spec, created] = await ShopSpecification.findOrCreate({

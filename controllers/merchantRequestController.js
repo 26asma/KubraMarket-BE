@@ -28,7 +28,7 @@ exports.createRequest = async (req, res) => {
 
     res.status(201).json({ success: true, data: newRequest });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to create request', error: err.message });
+    res.status(500).json({ success: false, message: messages.general.SERVER_ERROR });
   }
 };
 
@@ -43,7 +43,7 @@ exports.getAllRequests = async (req, res) => {
 
     res.status(200).json({ success: true, data: requests });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch requests', error: err.message });
+    res.status(500).json({ success: false, message: messages.general.SERVER_ERROR });
   }
 };
 
@@ -58,7 +58,7 @@ exports.updateStatus = async (req, res) => {
 
     if (!request) {
       await transaction.rollback();
-      return res.status(404).json({ success: false, message: 'Request not found' });
+      return res.status(404).json({ success: false, message: messages.general.NOT_FOUND });
     }
 
     // ✅ Update merchant request status
@@ -111,7 +111,7 @@ exports.updateStatus = async (req, res) => {
     await transaction.commit();
     return res.status(200).json({
       success: true,
-      message: 'Request status updated successfully',
+      message: messages.general.ACTION_SUCCESS,
       data: request,
     });
   } catch (err) {
@@ -119,7 +119,7 @@ exports.updateStatus = async (req, res) => {
     console.error("❌ updateStatus failed:", err);
     return res.status(500).json({
       success: false,
-      message: 'Failed to update request status',
+      message: messages.general.SERVER_ERROR,
       error: err.message,
     });
   }
@@ -137,12 +137,12 @@ exports.updateStatus = async (req, res) => {
         });
     
         if (!request) {
-        return res.status(404).json({ success: false, message: 'Request not found' });
+        return res.status(404).json({ success: false, message: messages.general.NOT_FOUND });
         }
     
         res.status(200).json({ success: true, data: request });
     } catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to fetch request', error: err.message });
+        res.status(500).json({ success: false, message:messages.general.SERVER_ERROR, error: err.message });
     }}
 
     exports.getRequestsByStatus = async (req, res) => {
@@ -150,7 +150,7 @@ exports.updateStatus = async (req, res) => {
     const { status } = req.params;
 
     if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid status value' });
+      return res.status(400).json({ success: false, message: messages.general.BAD_REQUEST });
     }
 
     const requests = await MerchantRequest.findAll({
@@ -163,6 +163,6 @@ exports.updateStatus = async (req, res) => {
 
     res.status(200).json({ success: true, data: requests });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch requests', error: err.message });
+    res.status(500).json({ success: false, message: messages.general.SERVER_ERROR, error: err.message });
   }
 };

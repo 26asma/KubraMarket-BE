@@ -26,6 +26,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    due_date: {
+  type: DataTypes.DATEONLY,
+  allowNull: false
+},
+
     payment_status: {
       type: DataTypes.ENUM('pending', 'paid', 'late'),
       defaultValue: 'pending',

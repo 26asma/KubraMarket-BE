@@ -3,15 +3,19 @@ const express = require("express");
 const cors = require("cors");
 const { Sequelize } = require("sequelize");
 require("dotenv").config();
-
+const cron =require("node-cron")
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const merchantRoutes = require("./routes/merchantRoutes");
+const rentRoutes = require("./routes/rentRoutes")
 const merchantRequestRoutes = require("./routes/merchantRequestRoutes");
 const shopRoutes = require("./routes/shopRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const errorHandler = require('./middlewares/errorHandler');
+require('./jobs/generateMonthlyRent')();
+require('./jobs/markLateRent')();
+
 
 const app = express();
 const corsOptions = {
@@ -30,7 +34,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/shop", shopRoutes);
 app.use("/api/merchant", merchantRoutes);
 app.use('/api/merchant-requests',merchantRequestRoutes);
-
+app.use('/api/rent',rentRoutes)
 app.use("/api/category", categoryRoutes);
 app.use(errorHandler);
 

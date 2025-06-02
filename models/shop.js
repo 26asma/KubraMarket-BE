@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'shop_id',
         as: 'specification',
       });
+Shop.hasMany(models.RentPayment, { foreignKey: 'shop_id', as: 'rent_payments' });
 
       // Shop.hasMany(models.Product, {
       //   foreignKey: 'shop_id',
@@ -70,6 +71,12 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(15, 2),
       defaultValue: 0.0,
     },
+    monthly_rent: {
+  type: DataTypes.DECIMAL(10, 2),
+  allowNull: false,
+  defaultValue: 0.00
+},
+
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
