@@ -156,46 +156,33 @@ exports.getShopById = async (req, res) => {
     return res.status(500).json({ message: messages.general.SERVER_ERROR });
   }
 };
-// exports.getAllShops = async (req, res) => {
-//   try {
-//     const shops = await Shop.findAll();
-
-//     return res.status(200).json({ data: shops });
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: messages.general.SERVER_ERROR });
-//   }
-// };
+// get all shops including inactive ones
 exports.getAllShops = async (req, res) => {
   try {
-    let isAdmin = false;
+    const shops = await Shop.findAll();
 
-    // Check if Authorization header exists
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-
-      try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        if (['admin', 'super_admin'].includes(decoded.role)) {
-          isAdmin = true;
-        }
-      } catch (err) {
-        // Invalid token, proceed as public user
-      }
-    }
-
-    const whereCondition = isAdmin ? {} : { is_active: true };
-
-    const shops = await Shop.findAll({ where: whereCondition });
+    return res.status(200).json({ data: shops });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: messages.general.SERVER_ERROR });
+  }
+};
+// Get all active shops
+exports.getShops = async (req, res) => {
+  try {
+    const shops = await Shop.findAll({
+      where: { is_active: true },
+    });
 
     return res.status(200).json({ success: true, data: shops });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ success: false, message: messages.general.SERVER_ERROR });
+    return res.status(500).json({
+      success: false,
+      message: messages.general.SERVER_ERROR,
+    });
   }
 };
-
 
 const { sequelize } = require('../models'); // import sequelize instance
 

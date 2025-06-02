@@ -9,6 +9,7 @@ const isAdmin = require('../middlewares/isAdmin');
 // All routes start with /api/admin/users
 
 router.get('/users', verifyToken, isAdmin, adminController.getAllUsers);
+router.get('/shops', verifyToken, isAdmin, shopController.getAllShops);
 router.get('/users/:id', verifyToken, isAdmin, adminController.getUserById);
 router.patch('/users/:id/role', verifyToken, isAdmin, adminController.updateUserRole);
 router.delete('/users/:id', verifyToken, isAdmin, adminController.deleteUser);
