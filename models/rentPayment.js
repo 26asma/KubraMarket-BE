@@ -34,6 +34,10 @@ module.exports = (sequelize, DataTypes) => {
     payment_status: {
       type: DataTypes.ENUM('pending', 'paid', 'late'),
       defaultValue: 'pending',
+    },
+     payment_method: {
+      type: DataTypes.ENUM('offline', 'upi', 'netbanking', 'card'),
+      defaultValue: 'offline',
     }
   }, {
     tableName: 'rent_payments',

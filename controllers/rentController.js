@@ -3,13 +3,60 @@ const { Op, Sequelize } = require('sequelize');
 const messages = require('../constants/messages');
 
 
+// exports.payRent = async (req, res) => {
+//   try {
+//     const rentId = req.params.id;
+//     const merchantId = req.merchant.id;
+//     const shopId = req.shop.id;
+
+//     // Find the rent payment for this shop
+//     const rent = await RentPayment.findOne({
+//       where: {
+//         id: rentId,
+//         shop_id: shopId,
+//         merchant_id: merchantId
+//       }
+//     });
+
+//     if (!rent) {
+//       return res.status(404).json({ message: 'Rent payment not found for this merchant/shop' });
+//     }
+
+//     // Already paid
+//     if (rent.payment_status === 'paid') {
+//       return res.status(400).json({ message: 'This rent is already marked as paid.' });
+//     }
+
+//     rent.payment_status = 'paid';
+//     rent.paid_at = new Date();
+
+//     await rent.save();
+
+//     return res.status(200).json({
+//       message: 'Rent marked as paid successfully',
+//       data: rent
+//     });
+
+//   } catch (error) {
+//     console.error('❌ Rent payment update failed:', error);
+//     return res.status(500).json({ message: messages.general.SERVER_ERROR, error: error.message });
+//   }
+// };
+
+
 exports.payRent = async (req, res) => {
   try {
     const rentId = req.params.id;
     const merchantId = req.merchant.id;
     const shopId = req.shop.id;
+    const { payment_method } = req.body;
 
-    // Find the rent payment for this shop
+    // Validate payment method
+    const validMethods = ['offline', 'upi', 'netbanking', 'card'];
+    if (payment_method && !validMethods.includes(payment_method)) {
+      return res.status(400).json({ message: 'Invalid payment method' });
+    }
+
     const rent = await RentPayment.findOne({
       where: {
         id: rentId,
@@ -22,13 +69,13 @@ exports.payRent = async (req, res) => {
       return res.status(404).json({ message: 'Rent payment not found for this merchant/shop' });
     }
 
-    // Already paid
     if (rent.payment_status === 'paid') {
       return res.status(400).json({ message: 'This rent is already marked as paid.' });
     }
 
     rent.payment_status = 'paid';
     rent.paid_at = new Date();
+    rent.payment_method = payment_method || 'offline';
 
     await rent.save();
 
@@ -39,9 +86,10 @@ exports.payRent = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Rent payment update failed:', error);
-    return res.status(500).json({ message: messages.general.SERVER_ERROR, error: error.message });
+    return res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
+
 
 
 // GET /rent-payments/history
