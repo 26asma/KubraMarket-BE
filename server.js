@@ -12,6 +12,7 @@ const rentRoutes = require("./routes/rentRoutes")
 const merchantRequestRoutes = require("./routes/merchantRequestRoutes");
 const shopRoutes = require("./routes/shopRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const maintenanceRoutes = require("./routes/maintenanceRoutes");
 const errorHandler = require('./middlewares/errorHandler');
 require('./jobs/generateMonthlyRent')();
 require('./jobs/markLateRent')();
@@ -36,6 +37,7 @@ app.use("/api/merchant", merchantRoutes);
 app.use('/api/merchant-requests',merchantRequestRoutes);
 app.use('/api/rent',rentRoutes)
 app.use("/api/category", categoryRoutes);
+app.use("/api/maintenance", maintenanceRoutes);
 app.use(errorHandler);
 
 // Initialize Sequelize
