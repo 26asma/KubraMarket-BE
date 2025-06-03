@@ -22,5 +22,5 @@ router.get('/rent/due',verifyToken, isAdmin,rentController.getAllDuePayments);
 router.get('/rent/shop/:shopId', verifyToken, isAdmin, rentController.getRentPaymentsByShop); 
 router.get('/rent/summary', verifyToken, isAdmin, rentController.getRentSummary);
 router.get('/rent/summary/shop', verifyToken, isAdmin, rentController.getShopDueSummary);
-router.put('/shop/:shopId', verifyToken, isAdmin, adminController.updateShop);
+router.put('/shop/:shopId', verifyToken, isAdmin, shopController.updateShopByAdmin);
 module.exports = router;

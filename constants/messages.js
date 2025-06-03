@@ -47,6 +47,7 @@ module.exports = {
     SHOP_CREATED: "shop created successfully.",
     SHOP_DELETED: 'Shop deleted successfully! user role is updated to customer',
     SHOP_UPDATED: 'shop updated successfully!',
+    UNAUTHORIZED_SHOP: 'You are not authorized to access this shop.',
   },
 
   category: {

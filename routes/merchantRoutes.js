@@ -5,6 +5,6 @@ const verifyToken = require('../middlewares/verifyToken');
 const isMerchant = require('../middlewares/isMerchant');
 
 
-router.put('/shop/:shopId', verifyToken, isMerchant, shopController.updateShop);
+router.put('/shop/:shopId', verifyToken, isMerchant, shopController.updateShopByMerchant);
 
 module.exports = router;
