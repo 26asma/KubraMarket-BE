@@ -1,3 +1,5 @@
+const product = require("../models/product");
+
 module.exports = {
   auth: {
     INVALID_EMAIL: "Invalid email address.",
@@ -56,4 +58,41 @@ module.exports = {
   CATEGORY_UPDATED: 'Category updated successfully.',
   CATEGORY_DELETED: 'Category deleted successfully.'
 },
+products:{
+ NOT_FOUND: 'product not found.',
+PRODUCT_CREATED: 'product created successfully' ,
+PRODUCT_UPDATED:'Product updated successfully',
+PRODUCT_DELETED: 'Product deleted successfully',
+CREATION_FAILED:'product creation failed',
+UNAUTHORIZED_PRODUCT_ACCESS: 'You are not authorized to access this product.',
+  updated: "Product updated successfully.",
+  update_failed: "Failed to update product.",
+  deleted: "Product deleted successfully.",
+  delete_failed: "Failed to delete product.",
+  fetched_all: "All products fetched successfully.",
+  fetched_one: "Product details fetched successfully.",
+  fetch_failed: "Failed to fetch product(s).",
+  not_found: "Product not found.",
+
+},
+
+  rent: {
+    RENT_NOT_FOUND: "Rent payment not found for this merchant/shop.",
+    RENT_ALREADY_PAID: "This rent is already marked as paid.",
+    RENT_PAID_SUCCESS: "Rent marked as paid successfully.",
+  },
+
+  merchantRequest: {
+    REQUEST_NOT_FOUND: "Merchant request not found.",
+    REQUEST_APPROVED: "Merchant request approved successfully.",
+    REQUEST_REJECTED: "Merchant request rejected successfully.",
+    REQUEST_CREATED: "Merchant request created successfully.",
+  },
+
+  user: {
+    USER_NOT_FOUND: "User not found.",
+    USER_UPDATED: "User updated successfully.",
+    USER_DELETED: "User deleted successfully."
+
+}
 };

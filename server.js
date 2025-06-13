@@ -13,6 +13,9 @@ const merchantRequestRoutes = require("./routes/merchantRequestRoutes");
 const shopRoutes = require("./routes/shopRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const maintenanceRoutes = require("./routes/maintenanceRoutes");
+const productRoutes = require("./routes/productRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
+const cartRoutes = require("./routes/cartRoutes");
 const errorHandler = require('./middlewares/errorHandler');
 require('./jobs/generateMonthlyRent')();
 require('./jobs/markLateRent')();
@@ -20,7 +23,7 @@ require('./jobs/markLateRent')();
 
 const app = express();
 const corsOptions = {
-  origin: ['http://localhost:5173'], 
+  origin: ['http://localhost:5173','http://127.0.0.1:5500'], 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -38,6 +41,9 @@ app.use('/api/merchant-requests',merchantRequestRoutes);
 app.use('/api/rent',rentRoutes)
 app.use("/api/category", categoryRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
+app.use("/api/product", productRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/cart", cartRoutes);
 app.use(errorHandler);
 
 // Initialize Sequelize
