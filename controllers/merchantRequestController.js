@@ -47,7 +47,6 @@ exports.getAllRequests = async (req, res) => {
   }
 };
 
-
 exports.updateStatus = async (req, res) => {
   const transaction = await sequelize.transaction();
   try {
@@ -61,29 +60,24 @@ exports.updateStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: messages.general.NOT_FOUND });
     }
 
-    // ✅ Update merchant request status
+    const previousStatus = request.status;
+    const user = await User.findByPk(request.user_id, { transaction });
+
+    // ✅ Update status and audit
     request.status = status;
     request.admin_note = admin_note;
     request.reviewed_by = req.user.id;
     request.reviewed_at = new Date();
     await request.save({ transaction });
 
-    // ✅ On approval, promote to merchant & create records
-    if (status === 'approved') {
-      const user = await User.findByPk(request.user_id, { transaction });
-
+    if (previousStatus !== 'approved' && status === 'approved') {
+      // ✅ Promote to merchant and create records
       if (user.role !== 'merchant') {
-        // Promote user
         user.role = 'merchant';
         await user.save({ transaction });
       }
 
-      // Check if already a merchant
-      let merchant = await Merchant.findOne({
-        where: { user_id: user.id },
-        transaction
-      });
-
+      let merchant = await Merchant.findOne({ where: { user_id: user.id }, transaction });
       if (!merchant) {
         const shopId = `SHOP-${uuidv4().slice(0, 4).toUpperCase()}`;
         merchant = await Merchant.create({
@@ -105,6 +99,26 @@ exports.updateStatus = async (req, res) => {
           annual_income: 0.0,
           is_active: false,
         }, { transaction });
+      }
+
+    } else if (previousStatus === 'approved' && status !== 'approved') {
+      // ✅ Rollback merchant/shop creation and revert user role
+      const merchant = await Merchant.findOne({ where: { user_id: user.id }, transaction });
+
+      if (merchant) {
+        await Shop.destroy({ where: { merchant_id: merchant.id }, transaction });
+        await merchant.destroy({ transaction });
+
+        // Revert user role only if no other merchant record exists
+        const otherMerchant = await Merchant.findOne({
+          where: { user_id: user.id },
+          transaction
+        });
+
+        if (!otherMerchant) {
+          user.role = 'user';
+          await user.save({ transaction });
+        }
       }
     }
 

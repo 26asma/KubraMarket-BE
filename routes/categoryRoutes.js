@@ -16,6 +16,7 @@ router.post(
 );
 
 router.get('/', categoryController.getAllCategories);
+router.get('/:id', categoryController.getCategoryById );
 // router.put('/:id', verifyToken,isAdmin,categoryController.updateCategory);
 router.put('/:id', verifyToken, isAdmin, upload.single('image'), categoryController.updateCategory);
 
