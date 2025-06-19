@@ -51,6 +51,7 @@ exports.createCategory = async (req, res) => {
     res.status(400).json({
       success: false,
       message: Messages.general.SERVER_ERROR,
+      error: err.message,
     });
   }
 };
