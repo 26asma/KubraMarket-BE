@@ -1,4 +1,8 @@
 const { Shop, Merchant, User,Category,ShopSpecification,ShopCategory } = require('../models');
+
+const { uploadShopImage, deleteCloudinaryImage } = require('../utils/shopImageUploader');
+const { sequelize } = require('../models'); // ✅ import sequelize instance
+
 const messages = require('../constants/messages');
 const { v4: uuidv4 } = require('uuid');
 
@@ -43,21 +47,17 @@ exports.createShop = async (req, res, next) => {
   }
 };
 
-
 exports.updateShopByAdmin = async (req, res) => {
   const transaction = await sequelize.transaction();
 
   try {
     const { shopId } = req.params;
-
     const {
       shop_name,
       description,
       categories,
       has_physical_shop,
       location,
-      logo_url,
-      banner_url,
       annual_income,
       monthly_rent,
       is_active,
@@ -65,7 +65,6 @@ exports.updateShopByAdmin = async (req, res) => {
       is_exchangeable
     } = req.body;
 
-    // 1. Fetch the shop
     const shop = await Shop.findByPk(shopId, { transaction });
 
     if (!shop) {
@@ -73,48 +72,80 @@ exports.updateShopByAdmin = async (req, res) => {
       return res.status(404).json({ message: messages.general.NOT_FOUND });
     }
 
-    // 2. Update all allowed fields (Admin has full access)
+    const normalizeBoolean = (val) => ['true', 'on', '1', 1, true].includes(val);
+
+    // 🖼️ Upload Logo
+    if (req.files?.logo?.[0]) {
+      const oldLogoPublicId = getPublicIdFromUrl(shop.logo_url);
+      if (oldLogoPublicId) await deleteCloudinaryImage(oldLogoPublicId);
+
+      const logoResult = await uploadShopImage(req.files.logo[0].path, 'shops/logo', {
+        width: 400,
+        height: 400,
+        crop: 'fill'
+      });
+      console.log('Uploaded logo:', logoResult.secure_url);
+      shop.logo_url = logoResult.secure_url;
+    }
+
+    // 🖼️ Upload Banner
+    if (req.files?.banner?.[0]) {
+      const oldBannerPublicId = getPublicIdFromUrl(shop.banner_url);
+      if (oldBannerPublicId) await deleteCloudinaryImage(oldBannerPublicId);
+
+      const bannerResult = await uploadShopImage(req.files.banner[0].path, 'shops/banner', {
+        width: 1600,
+        height: 900,
+        crop: 'fill'
+      });
+      console.log('Uploaded banner:', bannerResult.secure_url);
+      shop.banner_url = bannerResult.secure_url;
+    }
+
+    // 🔁 Update shop name
     if (shop_name) {
       shop.shop_name = shop_name;
 
-      // Also update the merchant's shop_name
       const merchant = await Merchant.findOne({
         where: { id: shop.merchant_id },
         transaction
       });
+
       if (merchant) {
         merchant.shop_name = shop_name;
         await merchant.save({ transaction });
       }
     }
 
+    // 🔄 Update basic shop fields
     if (description !== undefined) shop.description = description;
-    if (has_physical_shop !== undefined) shop.has_physical_shop = has_physical_shop;
     if (location !== undefined) shop.location = location;
-    if (logo_url !== undefined) shop.logo_url = logo_url;
-    if (banner_url !== undefined) shop.banner_url = banner_url;
     if (annual_income !== undefined) shop.annual_income = annual_income;
     if (monthly_rent !== undefined) shop.monthly_rent = monthly_rent;
-    if (is_active !== undefined) shop.is_active = is_active;
+    if (has_physical_shop !== undefined) shop.has_physical_shop = normalizeBoolean(has_physical_shop);
+    if (is_active !== undefined) shop.is_active = normalizeBoolean(is_active);
 
     await shop.save({ transaction });
 
-    // 3. Update shop specifications
+    // 📦 Update specifications
     if (delivery_type || is_exchangeable !== undefined) {
       const [spec, created] = await ShopSpecification.findOrCreate({
         where: { shop_id: shop.id },
-        defaults: { delivery_type, is_exchangeable },
+        defaults: {
+          delivery_type,
+          is_exchangeable: normalizeBoolean(is_exchangeable)
+        },
         transaction
       });
 
       if (!created) {
-        spec.delivery_type = delivery_type ?? spec.delivery_type;
-        spec.is_exchangeable = is_exchangeable ?? spec.is_exchangeable;
+        if (delivery_type !== undefined) spec.delivery_type = delivery_type;
+        if (is_exchangeable !== undefined) spec.is_exchangeable = normalizeBoolean(is_exchangeable);
         await spec.save({ transaction });
       }
     }
 
-    // 4. Update categories
+    // 📂 Update categories
     if (Array.isArray(categories)) {
       await ShopCategory.destroy({ where: { shop_id: shop.id }, transaction });
 
@@ -140,7 +171,7 @@ exports.updateShopByAdmin = async (req, res) => {
 
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error('[ADMIN_SHOP_UPDATE_ERROR]', error);
     return res.status(500).json({ message: messages.general.SERVER_ERROR });
   }
 };
@@ -151,7 +182,7 @@ exports.updateShopByMerchant = async (req, res) => {
 
   try {
     const { shopId } = req.params;
-    const userId = req.user.id; // Set by auth middleware
+    const userId = req.user.id;
 
     const {
       shop_name,
@@ -159,37 +190,35 @@ exports.updateShopByMerchant = async (req, res) => {
       categories,
       has_physical_shop,
       location,
-      logo_url,
-      banner_url,
       delivery_type,
       is_exchangeable
-    } = req.body;
+    } = req.body || {};
 
-    // 1. Find the merchant associated with this user
-    const merchant = await Merchant.findOne({
-      where: { user_id: userId },
-      transaction
-    });
-
+    const merchant = await Merchant.findOne({ where: { user_id: userId }, transaction });
     if (!merchant) {
       await transaction.rollback();
       return res.status(403).json({ message: messages.auth.UNAUTHORIZED });
     }
 
-    // 2. Find the shop and check if it belongs to this merchant
     const shop = await Shop.findByPk(shopId, { transaction });
-
-    if (!shop) {
+    if (!shop || shop.merchant_id !== merchant.id) {
       await transaction.rollback();
-      return res.status(404).json({ message: messages.general.NOT_FOUND });
+      return res.status(403).json({ message: messages.shop.UNAUTHORIZED_SHOP });
     }
 
-    if (shop.merchant_id !== merchant.id) {
-      await transaction.rollback();
-      return res.status(403).json({ message: messages.shop.UNAUTHORIZED_SHOP }); // <-- 👈 Custom message
+    // Upload logo if provided
+    if (req.files?.logo?.[0]) {
+      const result = await uploadShopImage(req.files.logo[0].path, 'logo');
+      shop.logo_url = result.secure_url;
     }
 
-    // 3. Update allowed fields only
+    // Upload banner if provided
+    if (req.files?.banner?.[0]) {
+      const result = await uploadShopImage(req.files.banner[0].path, 'banner');
+      shop.banner_url = result.secure_url;
+    }
+
+    // Update text fields
     if (shop_name) {
       shop.shop_name = shop_name;
       merchant.shop_name = shop_name;
@@ -197,14 +226,12 @@ exports.updateShopByMerchant = async (req, res) => {
     }
 
     if (description !== undefined) shop.description = description;
-    if (has_physical_shop !== undefined) shop.has_physical_shop = has_physical_shop;
     if (location !== undefined) shop.location = location;
-    if (logo_url !== undefined) shop.logo_url = logo_url;
-    if (banner_url !== undefined) shop.banner_url = banner_url;
+    if (has_physical_shop !== undefined) shop.has_physical_shop = ['true', 'on', 1, true].includes(has_physical_shop);
 
     await shop.save({ transaction });
 
-    // 4. Update shop specification
+    // Update specs
     if (delivery_type || is_exchangeable !== undefined) {
       const [spec, created] = await ShopSpecification.findOrCreate({
         where: { shop_id: shop.id },
@@ -213,13 +240,14 @@ exports.updateShopByMerchant = async (req, res) => {
       });
 
       if (!created) {
-        spec.delivery_type = delivery_type ?? spec.delivery_type;
-        spec.is_exchangeable = is_exchangeable ?? spec.is_exchangeable;
+        if (delivery_type !== undefined) spec.delivery_type = delivery_type;
+        if (is_exchangeable !== undefined)
+          spec.is_exchangeable = ['true', 'on', 1, true].includes(is_exchangeable);
         await spec.save({ transaction });
       }
     }
 
-    // 5. Update categories
+    // Update categories
     if (Array.isArray(categories)) {
       await ShopCategory.destroy({ where: { shop_id: shop.id }, transaction });
 
@@ -233,10 +261,7 @@ exports.updateShopByMerchant = async (req, res) => {
           transaction
         });
 
-        await ShopCategory.create({
-          shop_id: shop.id,
-          category_id: category.id
-        }, { transaction });
+        await ShopCategory.create({ shop_id: shop.id, category_id: category.id }, { transaction });
       }
     }
 
@@ -245,7 +270,7 @@ exports.updateShopByMerchant = async (req, res) => {
 
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error('[UPDATE_SHOP_BY_MERCHANT_ERROR]', error);
     return res.status(500).json({ message: messages.general.SERVER_ERROR });
   }
 };
@@ -298,8 +323,8 @@ exports.getShops = async (req, res) => {
   }
 };
 
-const { sequelize } = require('../models'); // import sequelize instance
 
+const { getPublicIdFromUrl} = require('../utils/shopImageUploader');
 exports.deleteShop = async (req, res) => {
   const transaction = await sequelize.transaction();
 
@@ -318,22 +343,29 @@ exports.deleteShop = async (req, res) => {
       return res.status(404).json({ message: messages.auth.NOT_MERCHANT });
     }
 
+    // 🧼 Delete Cloudinary images
+    const logoPublicId = getPublicIdFromUrl(shop.logo_url);
+    const bannerPublicId = getPublicIdFromUrl(shop.banner_url);
+
+    if (logoPublicId) await deleteCloudinaryImage(logoPublicId);
+    if (bannerPublicId) await deleteCloudinaryImage(bannerPublicId);
+
+    // 👤 Demote user role
     await User.update(
       { role: 'customer' },
       { where: { id: merchant.user_id }, transaction }
     );
 
+    // 🗑️ Delete Shop and Merchant
     await Shop.destroy({ where: { id: shopId }, transaction });
     await Merchant.destroy({ where: { id: merchant.id }, transaction });
 
     await transaction.commit();
-    return res.status(200).json({
-      message: messages.shop.SHOP_DELETED,
-    });
+    return res.status(200).json({ message: messages.shop.SHOP_DELETED });
 
   } catch (error) {
     await transaction.rollback();
-    console.error("❌ Transaction failed:", error);
+    console.error('❌ Transaction failed:', error);
     return res.status(500).json({
       message: messages.general.SERVER_ERROR,
       error: error.message,

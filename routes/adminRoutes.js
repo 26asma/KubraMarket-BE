@@ -5,8 +5,8 @@ const shopController = require('../controllers/shopController');
 const rentController = require('../controllers/rentController');
 const verifyToken = require('../middlewares/verifyToken');
 const isAdmin = require('../middlewares/isAdmin');
+const shopUpload = require('../middlewares/uploadMiddleware/shopUpload');
 
-// All routes start with /api/admin/users
 
 router.get('/users', verifyToken, isAdmin, adminController.getAllUsers);
 router.get('/shops', verifyToken, isAdmin, shopController.getAllShops);
@@ -22,5 +22,18 @@ router.get('/rent/due',verifyToken, isAdmin,rentController.getAllDuePayments);
 router.get('/rent/shop/:shopId', verifyToken, isAdmin, rentController.getRentPaymentsByShop); 
 router.get('/rent/summary', verifyToken, isAdmin, rentController.getRentSummary);
 router.get('/rent/summary/shop', verifyToken, isAdmin, rentController.getShopDueSummary);
-router.put('/shop/:shopId', verifyToken, isAdmin, shopController.updateShopByAdmin);
+// router.put('/shop/:shopId', verifyToken, isAdmin, shopController.updateShopByAdmin);
+router.get('/shop/:shopId', verifyToken, isAdmin, shopController.getShopById);
+router.put(
+  '/shop/:shopId',
+  shopUpload.fields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'banner', maxCount: 1 }
+  ]),
+  verifyToken,
+  isAdmin,
+  shopController.updateShopByAdmin
+);
+router.delete('/shop/:shopId', verifyToken, isAdmin, shopController.deleteShop);
+
 module.exports = router;

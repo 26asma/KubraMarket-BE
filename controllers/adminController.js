@@ -270,3 +270,22 @@ if (monthly_rent !== undefined) shop.monthly_rent = monthly_rent;
     return res.status(500).json({ message: messages.SERVER_ERROR,error: error.message });
   }
 };
+exports.getshopById = async (req, res, next) => {
+  try {
+    const shop = await Shop.findByPk(req.params.shopId, {
+      include: [
+        { model: Merchant, attributes: ['id', 'shop_name'] },
+        { model: ShopSpecification, attributes: ['delivery_type', 'is_exchangeable'] },
+        { model: Category, as: 'categories', through: { attributes: [] } }
+      ]
+    });
+
+    if (!shop) {
+      return res.status(404).json({ success: false, message: messages.NOT_FOUND });
+    }
+
+    res.status(200).json({ success: true, data: shop });
+  } catch (err) {
+    next(err);
+  }
+}
