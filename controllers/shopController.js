@@ -58,6 +58,7 @@ exports.updateShopByAdmin = async (req, res) => {
       categories,
       has_physical_shop,
       location,
+      phone_number,
       annual_income,
       monthly_rent,
       is_active,
@@ -120,6 +121,7 @@ exports.updateShopByAdmin = async (req, res) => {
     // 🔄 Update basic shop fields
     if (description !== undefined) shop.description = description;
     if (location !== undefined) shop.location = location;
+    if (phone_number !== undefined) shop.phone_number = phone_number;
     if (annual_income !== undefined) shop.annual_income = annual_income;
     if (monthly_rent !== undefined) shop.monthly_rent = monthly_rent;
     if (has_physical_shop !== undefined) shop.has_physical_shop = normalizeBoolean(has_physical_shop);
@@ -190,6 +192,7 @@ exports.updateShopByMerchant = async (req, res) => {
       categories,
       has_physical_shop,
       location,
+      phone_number,
       delivery_type,
       is_exchangeable
     } = req.body || {};
@@ -227,6 +230,7 @@ exports.updateShopByMerchant = async (req, res) => {
 
     if (description !== undefined) shop.description = description;
     if (location !== undefined) shop.location = location;
+    if (phone_number !== undefined) shop.phone_number = phone_number;
     if (has_physical_shop !== undefined) shop.has_physical_shop = ['true', 'on', 1, true].includes(has_physical_shop);
 
     await shop.save({ transaction });

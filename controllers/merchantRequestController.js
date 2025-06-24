@@ -94,6 +94,7 @@ exports.updateStatus = async (req, res) => {
           category: request.category || 'general',
           has_physical_shop: request.has_physical_shop || false,
           location: request.shop_location || '',
+          phone_number: '',
           logo_url: '',
           banner_url: '',
           annual_income: 0.0,
