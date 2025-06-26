@@ -152,3 +152,29 @@ exports.resetPassword = async (req, res, next) => {
     next(createError(400, MESSAGES.auth.INVALID_OR_EXPIRED_TOKEN));
   }
 };
+
+
+exports.changePassword = async (req, res, next) => {
+  const userId = req.user.id;
+  const { oldPassword, newPassword } = req.body;
+
+  const { isValid, errors } = validateResetPassword({ newpassword: newPassword });
+  if (!oldPassword) errors.oldPassword = "Old password is required";
+  if (!isValid || errors.oldPassword) return res.status(400).json({ errors });
+
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) return next(createError(404, MESSAGES.auth.USER_NOT_FOUND));
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return next(createError(401, MESSAGES.auth.INCORRECT_PASSWORD));
+
+    const hashed = await hashPassword(newPassword);
+    await user.update({ password: hashed });
+
+    res.json({ msg: MESSAGES.auth.PASSWORD_CHANGED_SUCCESS });
+  } catch (err) {
+    next(createError(500, err.message || MESSAGES.general.SERVER_ERROR));
+  }
+};
+

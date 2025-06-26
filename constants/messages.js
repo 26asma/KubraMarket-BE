@@ -22,7 +22,8 @@ module.exports = {
   NOT_AUTHORIZED_MERCHANT: 'Access denied: You do not have permission to manage this shop.',
   PROFILE_UPDATED:'profile updated sucessfully!',
   USER_DELETED: 'user deleted sucessfully',
-  },
+  INCORRECT_PASSWORD : "Incorrect password.",
+PASSWORD_CHANGED_SUCCESS : "Password changed successfully.",} ,
 
   general: {
     SERVER_ERROR: "Something went wrong. Please try again later.",
